@@ -44,6 +44,12 @@ check("INV-8 拒绝原始图像→422", raw.status === 422 && raw.body.error ===
 const miss = await call("POST", `${B}/enroll`, { user_id: "u_y", face_token: "f_y" });
 check("缺 feature_vector→422", miss.status === 422, miss);
 
+// 防劫持：已绑定 face_u_1001 的 token 不可被改绑到 attacker
+const hijack = await call("POST", `${B}/enroll`, { user_id: "attacker", face_token: "face_u_1001", feature_vector: "v" });
+check("劫持已绑定 token → 409", hijack.status === 409, hijack);
+const stillMine = await call("POST", `${B}/verify`, { face_token: "face_u_1001" });
+check("种子映射未被劫持", stillMine.body.identity?.user_id === "u_1001", stillMine.body);
+
 // liveness challenge
 const live = await call("POST", `${B}/liveness`, { face_token: "face_u_1001", challenge: "c123" });
 check("liveness 通过", live.body.passed === true && live.body.challenge === "c123", live.body);

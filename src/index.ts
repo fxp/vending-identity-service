@@ -65,8 +65,14 @@ async function enroll(req: Request): Promise<Response> {
   const offending = RAW_IMAGE_FIELDS.filter((f) => f in b);
   if (offending.length) return json({ error: "inv8_raw_image_rejected", fields: offending, detail: "只接受 feature_vector，禁止上送原始图像" }, 422);
   if (!b.user_id || !b.face_token || !b.feature_vector) return json({ error: "missing_fields", need: ["user_id", "face_token", "feature_vector"] }, 422);
-  BY_TOKEN.set(String(b.face_token), { user_id: String(b.user_id), feature_vector: String(b.feature_vector), enrolled_at: "runtime" });
-  return json({ enrolled: b.user_id, face_token: b.face_token });
+  const userId = String(b.user_id);
+  const token = String(b.face_token);
+  // 防劫持：已绑定其它 user_id 的 face_token 不可被覆盖（否则可劫持种子用户的识别结果）
+  const existing = BY_TOKEN.get(token);
+  if (existing && existing.user_id !== userId)
+    return json({ error: "face_token_bound_to_other_user", face_token: token, detail: "已绑定其它 user_id，拒绝覆盖" }, 409);
+  BY_TOKEN.set(token, { user_id: userId, feature_vector: String(b.feature_vector), enrolled_at: "runtime" });
+  return json({ enrolled: userId, face_token: token });
 }
 
 async function liveness(req: Request): Promise<Response> {

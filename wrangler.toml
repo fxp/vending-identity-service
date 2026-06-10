@@ -1,0 +1,9 @@
+name = "vending-identity-service"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# 状态进程内 Map（_reset 重置种子）。生产持久化特征登记 → 绑 D1（只存特征向量，绝不存原始图像 INV-8）：
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "identity"
+# database_id = "<运行 `wrangler d1 create identity` 后填入>"
